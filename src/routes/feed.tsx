@@ -1,0 +1,221 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { SiteShell } from "@/components/site/SiteShell";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
+import { User } from "@supabase/supabase-js";
+
+export const Route = createFileRoute("/feed")({
+  head: () => ({
+    meta: [
+      { title: "Discussion feed — CampusConnect" },
+      { name: "description", content: "Announcements, discussions, and threads across your clubs." },
+    ],
+  }),
+  component: Feed,
+});
+
+function Feed() {
+  const supabase = createClient();
+  const queryClient = useQueryClient();
+  const [user, setUser] = useState<User | null>(null);
+  const [newPost, setNewPost] = useState("");
+  const [newComments, setNewComments] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+  }, [supabase]);
+
+  // Fetch the user's clubs so they can select which club to post to
+  const { data: userClubs = [] } = useQuery({
+    queryKey: ["userClubs", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("club_members")
+        .select(`
+          clubs (id, name)
+        `)
+        .eq("user_id", user.id)
+        .eq("status", "approved");
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const [selectedClubId, setSelectedClubId] = useState<string>("");
+
+  useEffect(() => {
+    if (userClubs.length > 0 && !selectedClubId) {
+      const firstClub = Array.isArray(userClubs[0].clubs) ? userClubs[0].clubs[0] : userClubs[0].clubs;
+      if (firstClub) setSelectedClubId(firstClub.id);
+    }
+  }, [userClubs, selectedClubId]);
+
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ["posts"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("posts")
+        .select(`
+          id, content, created_at,
+          profiles (full_name),
+          clubs (name),
+          comments (id, content, created_at, profiles (full_name))
+        `)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  useEffect(() => {
+    // Realtime subscriptions for posts and comments
+    const channel = supabase.channel('realtime_feed')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, queryClient]);
+
+  const postMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Must be logged in");
+      if (!selectedClubId) throw new Error("Select a club");
+      await supabase.from("posts").insert({
+        club_id: selectedClubId,
+        author_id: user.id,
+        content: newPost,
+      });
+      setNewPost("");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["posts"] }),
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: async ({ postId, content }: { postId: string, content: string }) => {
+      if (!user) throw new Error("Must be logged in");
+      await supabase.from("comments").insert({
+        post_id: postId,
+        author_id: user.id,
+        content,
+      });
+      setNewComments(prev => ({ ...prev, [postId]: "" }));
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["posts"] }),
+  });
+
+  const timeAgo = (dateString: string) => {
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+    const diff = new Date().getTime() - new Date(dateString).getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days > 0) return rtf.format(-days, 'day');
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours > 0) return rtf.format(-hours, 'hour');
+    const minutes = Math.floor(diff / (1000 * 60));
+    return rtf.format(-Math.max(1, minutes), 'minute');
+  };
+
+  return (
+    <SiteShell>
+      <section className="border-b-2 border-black bg-peach px-4 py-14 md:px-6">
+        <div className="mx-auto max-w-4xl">
+          <p className="eyebrow font-bold">Discussion feed</p>
+          <h1 className="mt-2 text-4xl font-bold md:text-6xl">What clubs are talking about.</h1>
+        </div>
+      </section>
+      <section className="bg-cream px-4 py-12 md:px-6">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <div className="neu-border bg-white p-4">
+            <textarea
+              value={newPost}
+              onChange={e => setNewPost(e.target.value)}
+              placeholder="Post an update to your clubs..."
+              rows={3}
+              className="w-full resize-none border-0 bg-transparent font-mono text-sm outline-none"
+            />
+            <div className="mt-2 flex items-center justify-between border-t-2 border-black pt-3">
+              <select 
+                value={selectedClubId}
+                onChange={e => setSelectedClubId(e.target.value)}
+                className="font-mono text-xs outline-none bg-transparent"
+              >
+                {userClubs.length === 0 && <option value="">No clubs joined</option>}
+                {userClubs.map(uc => {
+                  const c = Array.isArray(uc.clubs) ? uc.clubs[0] : uc.clubs;
+                  return c ? <option key={c.id} value={c.id}>Posting to · {c.name}</option> : null;
+                })}
+              </select>
+              <button 
+                onClick={() => {
+                  if (!user) return alert("Log in first");
+                  if (newPost.trim()) postMutation.mutate();
+                }}
+                disabled={!newPost.trim() || postMutation.isPending}
+                className="neu-border bg-black px-4 py-1 font-mono text-xs font-bold uppercase text-cream disabled:opacity-50"
+              >
+                Post
+              </button>
+            </div>
+          </div>
+          {isLoading ? (
+            <div className="font-mono text-center py-10">Loading feed...</div>
+          ) : posts.map((p) => {
+            const author = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+            const club = Array.isArray(p.clubs) ? p.clubs[0] : p.clubs;
+            const postComments = Array.isArray(p.comments) ? p.comments : [];
+            
+            return (
+              <article key={p.id} className="neu-border bg-white p-6">
+                <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b-2 border-black pb-3">
+                  <div>
+                    <p className="font-display text-lg font-bold">{author?.full_name || "Unknown User"}</p>
+                    <p className="font-mono text-xs">in {club?.name || "Unknown Club"} · {timeAgo(p.created_at)}</p>
+                  </div>
+                  <span className="neu-border bg-lime px-2 py-1 font-mono text-[10px] font-bold uppercase">Post</span>
+                </header>
+                <p className="mt-2 font-mono text-sm leading-relaxed whitespace-pre-wrap">{p.content}</p>
+                <div className="mt-4 space-y-3 border-t-2 border-black pt-4">
+                  {postComments.map((c: any) => {
+                    const cAuthor = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles;
+                    return (
+                      <div key={c.id} className="neu-border bg-cream p-3">
+                        <div className="flex justify-between">
+                          <p className="font-mono text-xs font-bold uppercase">{cAuthor?.full_name || "Unknown User"}</p>
+                          <p className="font-mono text-[10px] text-gray-500">{timeAgo(c.created_at)}</p>
+                        </div>
+                        <p className="mt-1 font-mono text-sm whitespace-pre-wrap">{c.content}</p>
+                      </div>
+                    );
+                  })}
+                  <div className="flex gap-2">
+                    <input
+                      value={newComments[p.id] || ""}
+                      onChange={e => setNewComments(prev => ({ ...prev, [p.id]: e.target.value }))}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!user) return alert("Log in first");
+                          const content = newComments[p.id];
+                          if (content?.trim()) commentMutation.mutate({ postId: p.id, content });
+                        }
+                      }}
+                      placeholder="Reply..."
+                      className="neu-border w-full bg-white px-3 py-2 font-mono text-sm outline-none"
+                    />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    </SiteShell>
+  );
+}

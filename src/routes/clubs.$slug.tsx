@@ -1,0 +1,129 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { SiteShell } from "@/components/site/SiteShell";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
+import { User } from "@supabase/supabase-js";
+
+export const Route = createFileRoute("/clubs/$slug")({
+  head: () => ({
+    meta: [
+      { title: "Club — CampusConnect" },
+      { name: "description", content: "Club profile, events, and members on CampusConnect." },
+    ],
+  }),
+  component: ClubProfile,
+});
+
+function ClubProfile() {
+  const { slug } = Route.useParams();
+  const supabase = createClient();
+  const queryClient = useQueryClient();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+  }, [supabase]);
+
+  const { data: club, isLoading } = useQuery({
+    queryKey: ["club", slug],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clubs")
+        .select(`
+          id, name, slug, description,
+          club_members (id, role, status, user_id, profiles (full_name)),
+          events (id, title, event_date)
+        `)
+        .eq("slug", slug)
+        .single();
+      return data;
+    },
+  });
+
+  const joinMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !club) throw new Error("Must be logged in");
+      await supabase.from("club_members").insert({
+        club_id: club.id,
+        user_id: user.id,
+        status: "pending",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["club", slug] });
+    },
+  });
+
+  if (isLoading) return <SiteShell><div className="p-10 font-mono">Loading club...</div></SiteShell>;
+  if (!club) return <SiteShell><div className="p-10 font-mono">Club not found.</div></SiteShell>;
+
+  const members = Array.isArray(club.club_members) ? club.club_members.filter(m => m.status === 'approved') : [];
+  const memberNames = members.map(m => {
+    const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+    return profile?.full_name || "Unknown User";
+  });
+  
+  const events = Array.isArray(club.events) ? club.events : [];
+  const membership = user && Array.isArray(club.club_members) ? club.club_members.find(m => m.user_id === user.id) : null;
+
+  return (
+    <SiteShell>
+      <section className="border-b-2 border-black bg-lime px-4 py-14 md:px-6">
+        <div className="mx-auto max-w-6xl">
+          <p className="eyebrow font-bold">Club</p>
+          <h1 className="mt-2 text-5xl font-bold md:text-7xl">{club.name}</h1>
+          <p className="mt-4 max-w-2xl font-mono text-sm md:text-base">{club.description}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button 
+              onClick={() => {
+                if (!user) return alert("Please sign in first");
+                joinMutation.mutate();
+              }}
+              disabled={!!membership || joinMutation.isPending}
+              className={`neu-border neu-press px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider ${membership ? 'bg-gray-300 cursor-not-allowed' : 'bg-black text-cream'}`}
+            >
+              {membership ? (membership.status === 'pending' ? 'Request Pending' : 'Member ✓') : 'Join club'}
+            </button>
+            <button className="neu-border neu-press bg-cream px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider">
+              Follow
+            </button>
+          </div>
+        </div>
+      </section>
+      <section className="bg-cream px-4 py-12 md:px-6">
+        <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-3">
+          <div className="neu-border bg-white p-6 lg:col-span-2">
+            <h2 className="mb-4 border-b-2 border-black pb-3 text-xl font-bold">Upcoming events</h2>
+            {events.length === 0 ? (
+              <p className="font-mono text-sm">No upcoming events.</p>
+            ) : (
+              <ul className="divide-y-2 divide-black">
+                {events.map((e) => (
+                  <li key={e.id} className="flex items-center gap-4 py-4">
+                    <div className="neu-border bg-sky px-3 py-2 font-mono text-xs font-bold">
+                      {e.event_date ? new Date(e.event_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase() : "TBA"}
+                    </div>
+                    <p className="flex-1 font-display font-bold">{e.title}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="neu-border bg-white p-6">
+            <h2 className="mb-4 border-b-2 border-black pb-3 text-xl font-bold">Members · {members.length}</h2>
+            {memberNames.length === 0 ? (
+              <p className="font-mono text-sm">No members yet.</p>
+            ) : (
+              <ul className="grid grid-cols-2 gap-2 font-mono text-sm">
+                {memberNames.map((m, i) => (
+                  <li key={i} className="neu-border bg-cream p-2 truncate" title={m}>{m}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </section>
+    </SiteShell>
+  );
+}
