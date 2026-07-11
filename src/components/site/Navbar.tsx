@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { ThemeToggle } from "../ThemeToggle";
 
 const links = [
   { to: "/events", label: "Events" },
@@ -29,13 +30,18 @@ export function Navbar() {
             </Link>
           ))}
         </nav>
-        <Link
-          to="/auth"
-          className="neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream hover:bg-cream hover:text-black"
-          style={{ letterSpacing: "0.08em" }}
-        >
-          Sign in
-        </Link>
+
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+
+          <Link
+            to="/auth"
+            className="neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream hover:bg-cream hover:text-black"
+            style={{ letterSpacing: "0.08em" }}
+          >
+            Sign in
+          </Link>
+        </div>
       </div>
     </header>
   );
