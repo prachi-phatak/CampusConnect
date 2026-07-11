@@ -28,6 +28,129 @@ CampusConnect solves the chaos of college clubs juggling WhatsApp groups, spread
 | **Backend**         | Supabase (Postgres, Auth, Storage, Realtime) |
 | **Package Manager** | Bun                                          |
 
+## 🏗️ Architecture / Database
+
+This project uses **Supabase (PostgreSQL)** as its backend database, with Supabase Auth and Row Level Security enabled for access control.
+
+### Core Tables
+
+#### profiles
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key; references Supabase Auth user |
+| full_name | Text | User's full name |
+| avatar_url | Text | Profile avatar image URL |
+| college | Text | College or university name |
+| bio | Text | Short biography |
+| role | user_role | User role such as `student` or `club_admin` |
+| created_at | Timestamp | Profile creation time |
+| updated_at | Timestamp | Last profile update time |
+
+#### clubs
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| name | Text | Club name |
+| slug | Text | Unique URL-friendly club identifier |
+| description | Text | Club description |
+| banner_url | Text | Club banner image URL |
+| logo_url | Text | Club logo image URL |
+| created_by | UUID | Reference to the profile that created the club |
+| created_at | Timestamp | Club creation time |
+| updated_at | Timestamp | Last club update time |
+
+#### club_members
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| club_id | UUID | References clubs.id |
+| user_id | UUID | References profiles.id |
+| role | member_role | Member or admin role |
+| status | join_status | Membership status such as pending or approved |
+| joined_at | Timestamp | Membership join time |
+
+#### events
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| club_id | UUID | References clubs.id |
+| title | Text | Event title |
+| description | Text | Event description |
+| banner_url | Text | Event banner image URL |
+| event_date | Timestamp | Scheduled event date |
+| location | Text | Event location |
+| created_by | UUID | Reference to the profile that created the event |
+| created_at | Timestamp | Event creation time |
+| updated_at | Timestamp | Last event update time |
+
+#### event_rsvps
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| event_id | UUID | References events.id |
+| user_id | UUID | References profiles.id |
+| checked_in | Boolean | Indicates whether the user checked in |
+| rsvp_at | Timestamp | RSVP timestamp |
+
+#### posts
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| club_id | UUID | References clubs.id |
+| author_id | UUID | References profiles.id |
+| content | Text | Post content |
+| created_at | Timestamp | Post creation time |
+| updated_at | Timestamp | Last post update time |
+
+#### comments
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| post_id | UUID | References posts.id |
+| author_id | UUID | References profiles.id |
+| content | Text | Comment content |
+| created_at | Timestamp | Comment creation time |
+| updated_at | Timestamp | Last comment update time |
+
+#### certificates
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| event_id | UUID | References events.id |
+| user_id | UUID | References profiles.id |
+| certificate_url | Text | Download URL for the certificate |
+| issued_at | Timestamp | Certificate issue time |
+
+### Relationships
+
+- One profile can create many clubs, events, posts, comments, and certificates.
+- One club can have many members, events, and posts.
+- One event can have many RSVPs and certificates.
+- One post can have many comments.
+- `club_members.club_id` → `clubs.id`
+- `club_members.user_id` → `profiles.id`
+- `events.club_id` → `clubs.id`
+- `event_rsvps.event_id` → `events.id`
+- `event_rsvps.user_id` → `profiles.id`
+- `posts.club_id` → `clubs.id`
+- `posts.author_id` → `profiles.id`
+- `comments.post_id` → `posts.id`
+- `comments.author_id` → `profiles.id`
+- `certificates.event_id` → `events.id`
+- `certificates.user_id` → `profiles.id`
+
+### Entity Relationship Diagram (ERD)
+
+```text
+profiles ──< clubs >──< club_members >── clubs
+  │             │              │
+  │             │              └── events ──< event_rsvps
+  │             │
+  │             └── posts ──< comments
+  │
+  └── certificates
+```
+
 ## 🚀 Getting Started
 
 1. **Clone the repository:**
