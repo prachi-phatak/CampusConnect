@@ -1,9 +1,12 @@
+import { formatDate } from "../lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteShell } from "@/components/site/SiteShell";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
+import { EventCard } from "@/components/EventCard";
+import { CreateEventDialog } from "@/components/CreateEventDialog";
 
 export const Route = createFileRoute("/events")({
   head: () => ({
@@ -28,25 +31,63 @@ function EventsPage() {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
   }, [supabase]);
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: queryData, isLoading } = useQuery({
     queryKey: ["events"],
     queryFn: async () => {
       const { data } = await supabase
         .from("events")
         .select(
           `
-          id, title, description, event_date, location, 
+          id, title, description, event_date, location, banner_url,
           clubs (name),
           event_rsvps (id, user_id)
         `,
         )
         .order("event_date", { ascending: true });
-      return data || [];
+
+      // Fallback to mock data in development if database is empty
+      if (import.meta.env.DEV && (!data || data.length === 0)) {
+        return [
+          {
+            id: "mock-1",
+            title: "Hackathon 2024",
+            description: "Annual college hackathon. Build something awesome in 24 hours!",
+            event_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            location: "Main Auditorium",
+            clubs: { name: "Tech Club" },
+            event_rsvps: [{ id: "rsvp-1", user_id: "user-1" }],
+          },
+          {
+            id: "mock-2",
+            title: "Watercolor Workshop",
+            description: "Learn the basics of watercolor painting.",
+            event_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            location: "Art Studio 3",
+            clubs: { name: "Art & Design" },
+            event_rsvps: [],
+          },
+          {
+            id: "mock-3",
+            title: "Open Mic Night",
+            description: "Showcase your talent or just come to enjoy the performances.",
+            event_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            location: "Student Center",
+            clubs: { name: "Music Society" },
+            event_rsvps: [
+              { id: "rsvp-2", user_id: "user-2" },
+              { id: "rsvp-3", user_id: "user-3" },
+            ],
+          },
+        ];
+      }
+
+      return data;
     },
   });
 
+  const events = queryData || [];
+
   useEffect(() => {
-    // Realtime subscription for RSVP counts
     const channel = supabase
       .channel("realtime_rsvps")
       .on("postgres_changes", { event: "*", schema: "public", table: "event_rsvps" }, () => {
@@ -63,10 +104,17 @@ function EventsPage() {
   const toggleRsvp = useMutation({
     mutationFn: async ({ eventId, hasRsvpd }: { eventId: string; hasRsvpd: boolean }) => {
       if (!user) throw new Error("Must be logged in");
-      if (hasRsvpd) {
-        await supabase.from("event_rsvps").delete().match({ event_id: eventId, user_id: user.id });
-      } else {
-        await supabase.from("event_rsvps").insert({ event_id: eventId, user_id: user.id });
+      if (eventId.startsWith("mock-")) {
+        // Skip database call for mock event cards in development
+        console.log(`[CampusConnect] Mock RSVP toggled for event: ${eventId}`);
+        return;
+      }
+      const { error } = hasRsvpd
+        ? await supabase.from("event_rsvps").delete().match({ event_id: eventId, user_id: user.id })
+        : await supabase.from("event_rsvps").insert({ event_id: eventId, user_id: user.id });
+
+      if (error) {
+        throw new Error(error.message);
       }
     },
     onSuccess: () => {
@@ -77,8 +125,7 @@ function EventsPage() {
 
   const colors = ["bg-lime", "bg-sky", "bg-peach", "bg-lavender"];
 
-  // Basic frontend filtering (mock tags since we didn't add a tag column to schema)
-  const filteredEvents = filter === "All" ? events : events.filter(() => true); // In a real app, filter by tag
+  const filteredEvents = filter === "All" ? events : events.filter(() => true);
 
   return (
     <SiteShell>
@@ -88,7 +135,7 @@ function EventsPage() {
             <p className="eyebrow font-bold">All events · Fall semester</p>
             <h1 className="mt-2 text-4xl font-bold md:text-6xl">What's on this week.</h1>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {["All", "Workshop", "Talk", "Hackathon", "Social"].map((t, i) => (
               <button
                 key={t}
@@ -98,6 +145,7 @@ function EventsPage() {
                 {t}
               </button>
             ))}
+            <CreateEventDialog user={user} />
           </div>
         </div>
       </section>
@@ -106,64 +154,16 @@ function EventsPage() {
           {isLoading ? (
             <div className="col-span-full font-mono text-center py-10">Loading events...</div>
           ) : (
-            filteredEvents.map((e, index) => {
-              const c = Array.isArray(e.clubs) ? e.clubs[0] : e.clubs;
-              const rsvps = Array.isArray(e.event_rsvps) ? e.event_rsvps : [];
-              const hasRsvpd = user ? rsvps.some((r) => r.user_id === user.id) : false;
-
-              return (
-                <article key={e.id} className="neu-border neu-press flex flex-col bg-white p-5">
-                  <div className="mb-4 flex items-start justify-between">
-                    <div
-                      className={`neu-border ${colors[index % colors.length]} px-4 py-3 text-center font-mono text-sm font-bold`}
-                    >
-                      {e.event_date
-                        ? new Date(e.event_date)
-                            .toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                            .toUpperCase()
-                        : "TBA"}
-                    </div>
-                    <span className="neu-border bg-cream px-2 py-1 font-mono text-[10px] font-bold uppercase">
-                      Event
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-bold">{e.title}</h2>
-                  <p className="mt-1 font-mono text-xs">{c?.name}</p>
-                  <div className="my-4 border-t-2 border-black" />
-                  <dl className="space-y-1 font-mono text-xs">
-                    <div className="flex justify-between">
-                      <dt className="font-bold uppercase">Time</dt>
-                      <dd>
-                        {e.event_date
-                          ? new Date(e.event_date).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "TBA"}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="font-bold uppercase">Venue</dt>
-                      <dd>{e.location || "TBA"}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="font-bold uppercase text-lime-600">Attendees</dt>
-                      <dd className="font-bold">{rsvps.length} RSVP'd</dd>
-                    </div>
-                  </dl>
-                  <button
-                    onClick={() => {
-                      if (!user) return alert("Please log in to RSVP");
-                      toggleRsvp.mutate({ eventId: e.id, hasRsvpd });
-                    }}
-                    disabled={toggleRsvp.isPending}
-                    className={`neu-border neu-press mt-5 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider ${hasRsvpd ? "bg-lime text-black" : "bg-black text-cream"}`}
-                  >
-                    {hasRsvpd ? "RSVP'd ✓" : "RSVP →"}
-                  </button>
-                </article>
-              );
-            })
+            filteredEvents.map((e, index) => (
+              <EventCard
+                key={e.id}
+                event={e}
+                index={index}
+                user={user}
+                onRsvpToggle={(eventId, hasRsvpd) => toggleRsvp.mutate({ eventId, hasRsvpd })}
+                isRsvpPending={toggleRsvp.isPending}
+              />
+            ))
           )}
         </div>
       </section>
