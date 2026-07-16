@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   claim:
-    if: github.event.issue.pull_request == null && startsWith(github.event.comment.body, '/claim')
+    if: github.event.issue.pull_request == null && contains(github.event.comment.body, '/claim')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

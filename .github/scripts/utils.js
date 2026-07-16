@@ -37,7 +37,9 @@ export function isIgnoredBotUser(user) {
 }
 
 export function isCommand(body, command) {
-  return normalizeCommentBody(body) === command;
+  const text = normalizeCommentBody(body);
+  const regex = new RegExp("^" + command + "(?:\\s|$)");
+  return regex.test(text);
 }
 
 export function formatError(error) {
