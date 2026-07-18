@@ -47,6 +47,19 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
 
+            // Helper to find open PRs for a specific commit SHA
+            async function getPRsForCommit(sha) {
+              let page = 1;
+              let allOpenPrs = [];
+              while (true) {
+                const { data: openPrs } = await github.rest.pulls.list({ owner, repo, state: 'open', per_page: 100, page });
+                allOpenPrs = allOpenPrs.concat(openPrs);
+                if (openPrs.length < 100) break;
+                page++;
+              }
+              return allOpenPrs.filter(pr => pr.head.sha === sha);
+            }
+
             // ─── Resolve which PRs to process ──────────────────────────────────
             let prsToProcess = [];
 
@@ -57,23 +70,25 @@ jobs:
               const { data: fullPr } = await github.rest.pulls.get({ owner, repo, pull_number: pr.number });
               prsToProcess = [{ number: fullPr.number, headSha: fullPr.head.sha, assignees: fullPr.assignees, author: fullPr.user.login, mergeable: fullPr.mergeable, mergeable_state: fullPr.mergeable_state }];
             } else if (context.eventName === 'workflow_run') {
-              const prs = context.payload.workflow_run.pull_requests;
-              if (prs && prs.length > 0) {
-                const pr = prs[0];
+              const sha = context.payload.workflow_run.head_sha;
+              const matchingPrs = await getPRsForCommit(sha);
+              if (matchingPrs.length > 0) {
+                const pr = matchingPrs[0];
                 const { data: fullPr } = await github.rest.pulls.get({ owner, repo, pull_number: pr.number });
                 prsToProcess = [{ number: fullPr.number, headSha: fullPr.head.sha, assignees: fullPr.assignees, author: fullPr.user.login, mergeable: fullPr.mergeable, mergeable_state: fullPr.mergeable_state }];
               } else {
-                console.log("No pull requests associated with this workflow run. Exiting.");
+                console.log(`No open pull requests found for workflow_run head SHA: ${sha}. Exiting.`);
                 return;
               }
             } else if (context.eventName === 'check_run') {
-              const prs = context.payload.check_run.pull_requests;
-              if (prs && prs.length > 0) {
-                const pr = prs[0];
+              const sha = context.payload.check_run.head_sha;
+              const matchingPrs = await getPRsForCommit(sha);
+              if (matchingPrs.length > 0) {
+                const pr = matchingPrs[0];
                 const { data: fullPr } = await github.rest.pulls.get({ owner, repo, pull_number: pr.number });
                 prsToProcess = [{ number: fullPr.number, headSha: fullPr.head.sha, assignees: fullPr.assignees, author: fullPr.user.login, mergeable: fullPr.mergeable, mergeable_state: fullPr.mergeable_state }];
               } else {
-                console.log("No pull requests associated with this check run. Exiting.");
+                console.log(`No open pull requests found for check_run head SHA: ${sha}. Exiting.`);
                 return;
               }
             } else {
@@ -128,10 +143,11 @@ jobs:
                 checkPage++;
               }
 
-              // ─── 2. Filter out this workflow itself ─────────────────
+              // ─── 2. Filter out this workflow itself and Vercel ─────────────────
               const relevantChecks = allCheckRuns.filter((check) => {
                 const name = check.name.toLowerCase();
                 return (
+                  !name.includes("vercel") &&
                   !name.includes("pr status monitor") &&
                   !name.includes("monitor ci checks")
                 );
