@@ -197,29 +197,6 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.is_system_admin() TO authenticated;
-
--- Helper function: check if user is club admin
-CREATE OR REPLACE FUNCTION public.is_club_admin(club_id UUID, user_id UUID)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-STABLE
-SET search_path = public
-AS $$
-BEGIN
-  RETURN EXISTS (
-    SELECT 1
-    FROM public.club_members
-    WHERE club_members.club_id = is_club_admin.club_id
-      AND club_members.user_id = is_club_admin.user_id
-      AND club_members.role = 'admin'::member_role
-      AND club_members.status = 'approved'::join_status
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.is_club_admin(UUID, UUID) TO authenticated;
-
 -- 3. Row Level Security (RLS)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
