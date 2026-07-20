@@ -108,16 +108,18 @@ export function CreateEventDialog({ user }: { user: User | null }) {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="neu-border neu-press flex items-center gap-2 bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream"
+          className="neu-border neu-press flex items-center gap-2 bg-teal-500 px-4 py-2 font-mono text-xs font-bold uppercase text-black"
         >
           <Plus className="h-4 w-4" />
           Create event
         </button>
       </DialogTrigger>
-      <DialogContent className="neu-border neu-shadow bg-cream sm:max-w-md">
+      <DialogContent className="neu-border neu-shadow bg-violet-500 sm:max-w-md text-black">
         <DialogHeader>
-          <DialogTitle>Create a new event</DialogTitle>
-          <DialogDescription>Fill in the details below. All fields are required.</DialogDescription>
+          <DialogTitle className="text-blue-900">Create a new event</DialogTitle>
+          <DialogDescription className="text-black">
+            Fill in the details below. All fields are required.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -127,8 +129,10 @@ export function CreateEventDialog({ user }: { user: User | null }) {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Title</FormLabel>
-                  <FormControl>
+                  <FormLabel required className="text-red-800">
+                    Title
+                  </FormLabel>
+                  <FormControl className="text-black">
                     <Input placeholder="Hackathon 2026" maxLength={TITLE_MAX_LENGTH} {...field} />
                   </FormControl>
                   <FormMessage />
@@ -141,8 +145,10 @@ export function CreateEventDialog({ user }: { user: User | null }) {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel required>Description</FormLabel>
-                  <FormControl>
+                  <FormLabel required className="text-red-800">
+                    Description
+                  </FormLabel>
+                  <FormControl className="text-black">
                     <Textarea placeholder="What's this event about?" rows={4} {...field} />
                   </FormControl>
                   <FormMessage />
@@ -155,8 +161,8 @@ export function CreateEventDialog({ user }: { user: User | null }) {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
+                  <FormLabel className="text-red-800">Location</FormLabel>
+                  <FormControl className="text-black">
                     <Input
                       placeholder='e.g. "Main Auditorium, IIT Bombay" or "28.7041,77.1025" or "Online"'
                       {...field}
@@ -197,8 +203,10 @@ export function CreateEventDialog({ user }: { user: User | null }) {
                 name="startDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>Start date</FormLabel>
-                    <FormControl>
+                    <FormLabel required className="text-red-800">
+                      Start date
+                    </FormLabel>
+                    <FormControl className="text-gray-400">
                       <Input type="datetime-local" {...field} />
                     </FormControl>
                     <FormMessage />
@@ -211,8 +219,10 @@ export function CreateEventDialog({ user }: { user: User | null }) {
                 name="endDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel required>End date</FormLabel>
-                    <FormControl>
+                    <FormLabel required className="text-red-800">
+                      End date
+                    </FormLabel>
+                    <FormControl className="text-gray-400">
                       <Input type="datetime-local" {...field} />
                     </FormControl>
                     <FormMessage />

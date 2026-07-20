@@ -174,12 +174,14 @@ export default function SettingsPage() {
     <SiteShell>
       <section className="border-b-2 border-black px-4 py-14 md:px-6">
         <div className="mx-auto max-w-4xl">
-          <p className="eyebrow font-bold">Account</p>
-          <h1 className="mt-2 text-4xl font-bold text-[#123a57] md:text-6xl">Settings.</h1>
+          <p className="eyebrow font-bold text-black">Account</p>
+          <h1 className="mt-2 text-4xl font-bold text-[#123a57] md:text-6xl text-black">
+            Settings.
+          </h1>
         </div>
       </section>
       <section className="px-4 py-12 md:px-6">
-        <div className="mx-auto max-w-4xl space-y-6">
+        <div className="mx-auto max-w-4xl space-y-6 text-indigo-900">
           <Panel title="Profile">
             <AvatarUpload name={currentFullName || "User"} />
 
@@ -190,7 +192,7 @@ export default function SettingsPage() {
                   name="fullName"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel required className="eyebrow font-bold">
+                      <FormLabel required className="eyebrow font-bold text-black">
                         Full name
                       </FormLabel>
                       <FormControl>
@@ -209,7 +211,7 @@ export default function SettingsPage() {
                   name="handle"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel required className="eyebrow font-bold">
+                      <FormLabel required className="eyebrow font-bold text-black">
                         Handle
                       </FormLabel>
                       <FormControl>
@@ -229,7 +231,7 @@ export default function SettingsPage() {
                   name="collegeEmail"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel required className="eyebrow font-bold">
+                      <FormLabel required className="eyebrow font-bold text-black">
                         College email
                       </FormLabel>
                       <FormControl>
@@ -249,7 +251,7 @@ export default function SettingsPage() {
                   name="phoneNumber"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="eyebrow font-bold">Phone number</FormLabel>
+                      <FormLabel className="eyebrow font-bold text-black">Phone number</FormLabel>
                       <FormControl>
                         <input
                           {...field}
@@ -267,7 +269,7 @@ export default function SettingsPage() {
                   name="linkedinUrl"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="eyebrow font-bold">LinkedIn URL</FormLabel>
+                      <FormLabel className="eyebrow font-bold text-black">LinkedIn URL</FormLabel>
                       <FormControl>
                         <input
                           {...field}
@@ -285,7 +287,7 @@ export default function SettingsPage() {
                   name="bio"
                   render={({ field }) => (
                     <FormItem className="space-y-1">
-                      <FormLabel className="eyebrow font-bold">Bio</FormLabel>
+                      <FormLabel className="eyebrow font-bold text-black">Bio</FormLabel>
                       <FormControl>
                         <input
                           {...field}
@@ -326,7 +328,7 @@ export default function SettingsPage() {
               >
                 −
               </button>
-              <span className="font-mono text-sm font-bold">{fontSize}px</span>
+              <span className="font-mono text-sm font-bold text-black">{fontSize}px</span>
               <button
                 type="button"
                 onClick={increment}
@@ -338,7 +340,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={reset}
-                className="neu-border neu-press px-3 py-1 font-mono text-xs font-bold uppercase"
+                className="neu-border neu-press px-3 py-1 font-mono text-xs font-bold uppercase text-black"
               >
                 Reset
               </button>
@@ -611,7 +613,7 @@ function AvatarUpload({ name }: { name: string }) {
         />
       </div>
       <div className="text-center sm:text-left">
-        <p className="eyebrow font-bold">Profile picture</p>
+        <p className="eyebrow font-bold text-black">Profile picture</p>
         <p className="font-mono text-xs text-gray-500">
           JPG, PNG or WEBP. Max 2 MB. Square images look best.
         </p>

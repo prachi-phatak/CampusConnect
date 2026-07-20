@@ -362,22 +362,22 @@ export default function EventsPage() {
   return (
     <SiteShell>
       <PullToRefresh isRefreshing={isFetching} onRefresh={() => refetch()}>
-        <section className="border-b-2 border-black bg-sky px-4 py-14 md:px-6">
+        <section className="border-b-2 border-black bg-sky-300 px-4 py-14 md:px-6">
           <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="eyebrow font-bold">All events · Fall semester</p>
-              <h1 className="mt-2 text-3xl font-bold sm:text-4xl md:text-6xl">
+              <p className="eyebrow font-bold text-blue-900">All events · Fall semester</p>
+              <h1 className="mt-2 text-3xl font-bold sm:text-4xl md:text-6xl text-indigo-900">
                 What's on this week.
               </h1>
             </div>
             <div className="flex flex-col items-end gap-3 w-full md:w-auto">
               <div className="flex flex-wrap items-center gap-2">
-                <label className="neu-border flex cursor-pointer select-none items-center gap-2 bg-white px-3 py-2 font-mono text-xs font-bold uppercase transition-colors hover:bg-white md:mr-2">
+                <label className="neu-border flex cursor-pointer select-none items-center gap-2 bg-white px-3 py-2 font-mono text-xs font-bold uppercase transition-colors hover:bg-white md:mr-2 text-black">
                   <input
                     type="checkbox"
                     checked={hidePastEvents}
                     onChange={(e) => setHidePastEvents(e.target.checked)}
-                    className="h-4 w-4 accent-black cursor-pointer"
+                    className="h-4 w-4 accent-black cursor-pointer text-black"
                   />
                   Hide Past Events
                 </label>
@@ -385,7 +385,7 @@ export default function EventsPage() {
                   <button
                     key={t}
                     onClick={() => setFilter(t)}
-                    className={`neu-border px-3 py-2 font-mono text-xs font-bold uppercase ${filter === t ? "bg-black text-cream" : "bg-white"}`}
+                    className={`neu-border px-3 py-2 font-mono text-xs font-bold uppercase ${filter === t ? "bg-black text-cream" : "bg-white text-black"}`}
                   >
                     {t}
                   </button>
@@ -393,7 +393,7 @@ export default function EventsPage() {
                 {filter !== "All" && (
                   <button
                     onClick={() => setFilter("All")}
-                    className="neu-border bg-white px-3 py-2 font-mono text-xs font-bold uppercase transition-colors hover:bg-cream"
+                    className="neu-border bg-amber-300 px-3 py-2 font-mono text-xs font-bold uppercase transition-colors hover:bg-cream text-black"
                   >
                     Clear All
                   </button>
@@ -430,7 +430,7 @@ export default function EventsPage() {
                   value={sortOrder}
                   onValueChange={(value) => setSortOrder(value as "newest" | "oldest")}
                 >
-                  <SelectTrigger className="neu-border w-44 bg-white font-mono text-xs">
+                  <SelectTrigger className="neu-border w-44 bg-white font-mono text-xs text-black">
                     <SelectValue placeholder="Sort by date" />
                   </SelectTrigger>
 
@@ -445,9 +445,9 @@ export default function EventsPage() {
             </div>
           </div>
         </section>
-        <section className="bg-cream px-4 py-12 md:px-6">
+        <section className="bg-blue-900 px-4 py-12 md:px-6">
           {viewMode === "list" ? (
-            <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2 lg:grid-cols-3 ">
               {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => <EventCardSkeleton key={i} />)
                 : sortedEvents.map((e, index) => (

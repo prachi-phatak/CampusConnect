@@ -255,18 +255,18 @@ export default function EventDetailsPage() {
 
       {/* Details Container */}
       <section className="bg-cream px-4 py-12 md:px-6">
-        <div className="mx-auto max-w-4xl neu-border bg-white p-6 md:p-8">
+        <div className="mx-auto max-w-4xl neu-border bg-amber-300 p-6 md:p-8">
           {/* Eyebrow */}
-          <span className="neu-border bg-cream px-2 py-1 font-mono text-[10px] font-bold uppercase">
+          <span className="neu-border bg-lime text-black px-2 py-1 font-mono text-[10px] font-bold uppercase">
             Event Details
           </span>
 
           {/* Title */}
-          <h1 className="mt-4 text-3xl font-black md:text-5xl">{event.title}</h1>
+          <h1 className="mt-4 text-3xl font-black md:text-5xl text-amber-800">{event.title}</h1>
 
           {/* Organizer / Club link */}
           {club && (
-            <p className="mt-3 font-mono text-sm font-bold">
+            <p className="mt-3 font-mono text-sm font-bold text-amber-600">
               Organized by:{" "}
               <Link to={`/clubs/${club.slug}`} className="underline hover:text-black/70">
                 {club.name}
@@ -279,26 +279,30 @@ export default function EventDetailsPage() {
             <div className="flex gap-3">
               <Calendar className="mt-1 h-5 w-5 shrink-0 text-black/60" />
               <div>
-                <dt className="font-mono text-xs font-bold uppercase text-black/50">
+                <dt className="font-mono text-xs font-bold uppercase text-black">
                   Date &amp; Time
                 </dt>
-                <dd className="mt-1 text-sm font-bold">{formatEventDateRange(event)}</dd>
+                <dd className="mt-1 text-sm font-bold text-red-900">
+                  {formatEventDateRange(event)}
+                </dd>
               </div>
             </div>
 
             <div className="flex gap-3">
               <MapPin className="mt-1 h-5 w-5 shrink-0 text-black/60" />
               <div>
-                <dt className="font-mono text-xs font-bold uppercase text-black/50">Venue</dt>
-                <dd className="mt-1 text-sm font-bold">{event.location || "TBA"}</dd>
+                <dt className="font-mono text-xs font-bold uppercase text-black">Venue</dt>
+                <dd className="mt-1 text-sm font-bold text-red-900">{event.location || "TBA"}</dd>
               </div>
             </div>
 
             <div className="flex gap-3">
               <Users className="mt-1 h-5 w-5 shrink-0 text-black/60" />
               <div>
-                <dt className="font-mono text-xs font-bold uppercase text-black/50">Attendees</dt>
-                <dd className="mt-1 text-sm font-bold">{event.attendee_count ?? 0} RSVP&apos;d</dd>
+                <dt className="font-mono text-xs font-bold uppercase text-black">Attendees</dt>
+                <dd className="mt-1 text-sm font-bold text-red-900">
+                  {event.attendee_count ?? 0} RSVP&apos;d
+                </dd>
               </div>
             </div>
           </div>
@@ -352,7 +356,7 @@ export default function EventDetailsPage() {
 
           {/* Description */}
           <div className="mt-8">
-            <h2 className="font-display text-xl font-bold uppercase tracking-tight">
+            <h2 className="font-display text-xl font-bold uppercase tracking-tight text-blue-900">
               About the Event
             </h2>
             {event.description ? (
@@ -369,7 +373,9 @@ export default function EventDetailsPage() {
           {/* Map Embed */}
           {event.location && event.location.toLowerCase() !== "online" && (
             <div className="mt-8">
-              <h2 className="font-display text-xl font-bold uppercase tracking-tight">Location</h2>
+              <h2 className="font-display text-xl font-bold uppercase tracking-tight text-blue-900">
+                Location
+              </h2>
               {!coordsCheck.isValid ? (
                 <div className="neu-border mt-4 bg-peach/20 p-5 flex items-start gap-4">
                   <div className="p-2 bg-white border-2 border-black rounded-none shrink-0 text-[#e53935]">
@@ -387,7 +393,7 @@ export default function EventDetailsPage() {
                       href={`https://www.google.com/maps/search/?q=${encodeURIComponent(event.location)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 font-mono text-xs font-bold underline hover:no-underline"
+                      className="inline-flex items-center gap-1 font-mono text-xs font-bold underline hover:no-underline text-black"
                     >
                       Search location on Google Maps anyway ↗
                     </a>
@@ -406,7 +412,7 @@ export default function EventDetailsPage() {
                     href={`https://www.google.com/maps/search/?q=${encodeURIComponent(event.location)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-block font-mono text-xs font-bold underline"
+                    className="mt-2 inline-block font-mono text-xs font-bold underline text-blue-500"
                   >
                     View larger map ↗
                   </a>
@@ -417,7 +423,7 @@ export default function EventDetailsPage() {
 
           {/* Social Share Buttons */}
           <div className="mt-10 border-t-2 border-black pt-6">
-            <h3 className="font-mono text-xs font-bold uppercase text-black/50">
+            <h3 className="font-mono text-xs font-bold uppercase text-blue-900">
               Share with Friends
             </h3>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -425,7 +431,7 @@ export default function EventDetailsPage() {
                 href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="neu-border px-4 py-2 font-mono text-xs font-bold uppercase hover:bg-[#1DA1F2] hover:text-white transition-colors"
+                className="neu-border px-4 py-2 font-mono text-xs font-bold uppercase hover:bg-[#1DA1F2] hover:text-white transition-colors text-black"
               >
                 Twitter
               </a>
@@ -433,7 +439,7 @@ export default function EventDetailsPage() {
                 href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="neu-border px-4 py-2 font-mono text-xs font-bold uppercase hover:bg-[#0A66C2] hover:text-white transition-colors"
+                className="neu-border px-4 py-2 font-mono text-xs font-bold uppercase hover:bg-[#0A66C2] hover:text-white transition-colors text-black"
               >
                 LinkedIn
               </a>
@@ -441,7 +447,7 @@ export default function EventDetailsPage() {
                 href={`https://wa.me/?text=${encodeURIComponent(`Check out this event: ${event.title} - ${window.location.href}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="neu-border px-4 py-2 font-mono text-xs font-bold uppercase hover:bg-[#25D366] hover:text-white transition-colors"
+                className="neu-border px-4 py-2 font-mono text-xs font-bold uppercase hover:bg-[#25D366] hover:text-white transition-colors text-black"
               >
                 WhatsApp
               </a>
